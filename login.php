@@ -30,6 +30,7 @@ if ($cfg->getClientRegistrationMode() == 'disabled'
 else
     $inc = 'login.inc.php';
 
+    // mm test comment
 $suggest_pwreset = false;
 
 // Check the CSRF token, and ensure that future requests will have to use a
