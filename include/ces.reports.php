@@ -57,7 +57,7 @@
 	
 	function getThreads($nameOfUser)
 	{
-		$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE poster ='" . $nameOfUser . "'"; 
+		$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE poster ='" . $nameOfUser . "' AND ost5h_thread_entry.created >= DATE_ADD(CURDATE(), INTERVAL -2 DAY)"; 
 		$result = $this->cesQuery($sql);
 		
 		//Dump all of this into a normal type array
