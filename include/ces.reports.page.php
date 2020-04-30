@@ -23,7 +23,7 @@ fclose($myfile);
 //Should be able to build string for wijmo graph this way
 
 // How far back should these calculations go
-$daysBack = 300;
+$daysBack = 10;
 
 for($i = date('U') - (24*60*60*$daysBack) ; $i < date('U'); $i = $i + (24*60*60))
 {

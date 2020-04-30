@@ -13,9 +13,9 @@
 	{
 		 //Sql query to get some thread details
 		$servername = "localhost";
-		$username = "root";
+		$username = "";
 		$password = "";
-		$dbname = "helpdeskces";
+		$dbname = "helpdeskces_ostick";
 
 		// Create connection
 		$conn = new mysqli($servername, $username, $password, $dbname);
@@ -35,7 +35,7 @@
 	 // I should probably rename this main and get the users in another function
 	function getUsers()
 	{
-		$sql = "SELECT DISTINCT poster FROM ost_thread_entry";
+		$sql = "SELECT DISTINCT poster FROM ost5h_thread_entry";
 		$result = $this->cesQuery($sql);
 		
 		if ($result->num_rows > 0) 
@@ -57,7 +57,7 @@
 	
 	function getThreads($nameOfUser)
 	{
-		$sql = "SELECT DISTINCT thread_id FROM ost_thread_entry WHERE poster ='" . $nameOfUser . "'"; 
+		$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE poster ='" . $nameOfUser . "'"; 
 		$result = $this->cesQuery($sql);
 		
 		//Dump all of this into a normal type array
@@ -89,7 +89,7 @@
 
 		
 		// Get all the time stamps for thread
-		$sql = "SELECT created, poster FROM ost_thread_entry WHERE thread_id = " . $threadID . " UNION SELECT created, created FROM ost_thread WHERE id = " . $threadID . " ORDER BY created ASC";
+		$sql = "SELECT created, poster FROM ost5h_thread_entry WHERE thread_id = " . $threadID . " UNION SELECT created, created FROM ost5h_thread WHERE id = " . $threadID . " ORDER BY created ASC";
 		$result = $this->cesQuery($sql);
 		
 		// These will come in handy later, not sure if I need to declare them now but here they are
@@ -156,7 +156,7 @@
 		
 		
 		//get thrad createion date and thread end date
-		$sql = 'SELECT ost_thread.id, ost_thread.created, ost_thread_event.timestamp FROM ost_thread, ost_thread_event WHERE ost_thread_event.thread_id = ost_thread.id AND ost_thread_event.data = "{\"status\":[3,\"Closed\"]}" AND ost_thread.id = '.$threadID;
+		$sql = 'SELECT ost5h_thread.id, ost5h_thread.created, ost5h_thread_event.timestamp FROM ost5h_thread, ost5h_thread_event WHERE ost5h_thread_event.thread_id = ost5h_thread.id AND ost5h_thread_event.data = "{\"status\":[3,\"Closed\"]}" AND ost5h_thread.id = '.$threadID;
 		// This should only be returning one row
 		$result = $this->cesQuery($sql);
 		
@@ -250,7 +250,7 @@
 	// Function to get ticket creation date
 	function getCreateDate($threadID)
 	{
-		$sql = 'SELECT created FROM ost_thread WHERE ost_thread.id = '.$threadID;
+		$sql = 'SELECT created FROM ost5h_thread WHERE ost5h_thread.id = '.$threadID;
 		// This should only be returning one row
 		$result = $this->cesQuery($sql);
 		
@@ -269,7 +269,7 @@
 	// This function will get the email of a given user in osticket
 	function getUserEmail($userID)
 	{
-		$sql = "SELECT address FROM ost_user_emaail WHERE id = " . $userID;
+		$sql = "SELECT address FROM ost5h_user_emaail WHERE id = " . $userID;
 		
 		// This should only be returning one row
 		$result = $this->cesQuery($sql);
@@ -291,8 +291,8 @@
 	// This is the same as getUserEmail but with a different input parameter
 	function getPosterEmail($poster)
 	{
-		//need to go from ost_thread_entry.poster -> ost_user_email.address
-		$sql = "SELECT DISTINCT ost_thread_entry.user_id, ost_thread_entry.poster, ost_user_email.address FROM ost_user_email, ost_thread_entry WHERE ost_user_email.user_id = ost_thread_entry.user_id AND ost_thread_entry.poster= '" . $poster . "'";
+		//need to go from ost5h_thread_entry.poster -> ost5h_user_email.address
+		$sql = "SELECT DISTINCT ost5h_thread_entry.user_id, ost5h_thread_entry.poster, ost5h_user_email.address FROM ost5h_user_email, ost5h_thread_entry WHERE ost5h_user_email.user_id = ost5h_thread_entry.user_id AND ost5h_thread_entry.poster= '" . $poster . "'";
 		
 		$result = $this->cesQuery($sql);
 		
@@ -327,7 +327,7 @@
 	// This function need to return the ammount of time a ticket has been closed for
 	function getClosedTime($threadID)
 	{
-		$sql = "SELECT username, data, timestamp, event_id FROM ost_thread_event where thread_id = " . $threadID . " ORDER BY timestamp ASC";
+		$sql = "SELECT username, data, timestamp, event_id FROM ost5h_thread_event where thread_id = " . $threadID . " ORDER BY timestamp ASC";
 		$result = $this->cesQuery($sql);
 		
 		//event id 2  = closed
@@ -365,6 +365,13 @@
 		return $closedTime;
 	}
 	
+	// This function needs to take poster from the get users function
+	// And be able to return the team the user belongs to
+	function getTeam($poster)
+	{
+		
+		return $team;
+	}
  }
  
 
