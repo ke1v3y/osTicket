@@ -86,10 +86,7 @@
 	function getResponseTime($threadID)
 	{
 		
-		// Need to get poster of the thread for later
-		
-		
-		
+
 		
 		// Get all the time stamps for thread
 		$sql = "SELECT created, poster FROM ost_thread_entry WHERE thread_id = " . $threadID . " UNION SELECT created, created FROM ost_thread WHERE id = " . $threadID . " ORDER BY created ASC";
@@ -107,12 +104,28 @@
 			$x=0;
 			while($row = $result->fetch_assoc()) 
 			{
+				
+				// Need to set who cerated ticket
+				if ($x = 0)
+				{
+					$ogPoster = $row['poster'];
+				}
+				
+				
 				// need to make sure prevName/prevDate are not null
 				// If they are null this is presumably the first loop and we can skip stuff
 				
-				// Action item - if prev user has a C&E address dont count it
+				
+				//scanario one
+				// This is not the first run, Last message is external, previous message did not come from user
+				$s1 = (isset($prevName) && ($row['poster'] != $prevName) && $this->checkEmail($this->getPosterEmail($row['poster'])));
+				
+				//scenario two
+				// This is not the first run, last messsage is the ticket creater who is internal
+				$s2 = ( isset($prevName) && $ogPoster == $row['poster'] && $this->checkEmail($this->getPosterEmail($row['poster'])));
+				
 				// Also if poster is a C&E address make sure to count it as a response
-				if (isset($prevName) && ($row['poster'] != $prevName) && )
+				if ($s1 || $s2)
 				{
 					// make string into a timestamp we can use
 					$timestamp = strtotime($row['created']);
@@ -133,8 +146,13 @@
 	}
 	function getServiceTime($threadID)
 	{
-		//ACTION ITME
+		//ACTION ITME - done
 		// if a ticket is closed and opened multiple times we need to have handling for that
+		// The best way to do this might be to go through events,
+		// Then get each closed, and the event after it (if their is one)
+		// Then get the difference
+		// Then subtract this difference from what would have been the service time
+		// I think I will do this in another function called getClosedTime()
 		
 		
 		//get thrad createion date and thread end date
@@ -157,8 +175,13 @@
 		$created = strtotime($created);
 		$closed  = strtotime($closed);
 		
+		// Calculate Difference
+		$serviceTime = $this->timeStampDIfference($created,$closed);
+		// Subtract Time the ticket was closed
+		$serviceTime = $serviceTime - $this->getClosedTime($threadID);
+		
 		// Get the difference
-		return $this->timeStampDIfference($created,$closed);
+		return $serviceTime;
 		
 	}
 	
@@ -262,43 +285,89 @@
 		
 		return $email;
 	}
- }
- 
- // This is the same as getUserEmail but with a different input parameter
- function getPosterEmail($poster)
- {
-	//need to go from ost_thread_entry.poster -> ost_user_email.address
-	$sql = "SELECT DISTINCT ost_thread_entry.user_id, ost_thread_entry.poster, ost_user_email.address FROM ost_user_email, ost_thread_entry WHERE ost_user_email.user_id = ost_thread_entry.user_id AND ost_thread_entry.poster= '" . $poster . "'";
 	
-	$result = $this->cesQuery($sql);
 	
-	if ($result->num_rows > 0) 
+	
+	// This is the same as getUserEmail but with a different input parameter
+	function getPosterEmail($poster)
 	{
-		// In the unlikely event there are two rows this will just take the last one
-		while($row = $result->fetch_assoc())
+		//need to go from ost_thread_entry.poster -> ost_user_email.address
+		$sql = "SELECT DISTINCT ost_thread_entry.user_id, ost_thread_entry.poster, ost_user_email.address FROM ost_user_email, ost_thread_entry WHERE ost_user_email.user_id = ost_thread_entry.user_id AND ost_thread_entry.poster= '" . $poster . "'";
+		
+		$result = $this->cesQuery($sql);
+		
+		if ($result->num_rows > 0) 
 		{
-			$email = $row['address'];
+			// In the unlikely event there are two rows this will just take the last one
+			while($row = $result->fetch_assoc())
+			{
+				$email = $row['address'];
+			}
 		}
+		
+		return $email;
+	}
+	 
+	 // check email to see if it has a CE address
+	function checkEmail($email)
+	{
+		$ceatDomains = array("ceat.io", "ceadvancedtech.com", "cesales.com");
+
+		foreach ($ceatDomains as $domainName) 
+		{
+			if (stripos($email, $domainName) !== false) 
+			{		
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
-	return $email;
+	// This function need to return the ammount of time a ticket has been closed for
+	function getClosedTime($threadID)
+	{
+		$sql = "SELECT username, data, timestamp, event_id FROM ost_thread_event where thread_id = " . $threadID . " ORDER BY timestamp ASC";
+		$result = $this->cesQuery($sql);
+		
+		//event id 2  = closed
+		//event id 3  = re-opened
+		// Any event after a close seems to re-open ticket
+		
+		$closedTime = 0;
+		
+		// Loop through them
+		if ($result->num_rows > 0) 
+		{
+			while($row = $result->fetch_assoc()) 
+			{
+				// If its set that means last event was a closure.
+				if(isset($lastClosed))
+				{
+					$closedTime = $closedTime + ABS($row['timestamp'] - $lastClosed);
+				}
+				
+				
+				
+				// check if ticket has been closed
+				if ($row['event_id'] == 2)
+				{
+					// set last closed to timestamp of closd event
+					$lastClosed = $row['timestamp'];
+				}
+				else
+				{
+					$lastClosed = null;
+				}
+					
+			}
+		}
+		return $closedTime;
+	}
+	
  }
  
- // check email to see if it has a CE address
- function checkEmail($email)
- {
-    $ceatDomains = array("ceat.io", "ceadvancedtech.com", "cesales.com");
 
-	foreach ($ceatDomains as $domainName) 
-	{
-		if (stripos($email, $domainName) !== false) 
-		{		
-			return true;
-		}
-	}
-	
-	return false;
- }
  
  class CEUser
  {
