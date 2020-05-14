@@ -60,7 +60,7 @@
 		return $this->user;
 	}
 	
-	function getThreads($staff_id)
+	function getThreads($staffID)
 	{
 
 		
@@ -69,7 +69,7 @@
 		//$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE staff_id ='" . $nameOfUser . "' AND ost5h_thread_entry.created >= DATE_ADD(CURDATE(), INTERVAL -30 DAY)"; 
 		//$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE staff_id ='" . $staff_id . "' AND ost5h_thread_entry.created >= DATE_ADD(CURDATE(), INTERVAL -30 DAY)"; 
 		//going to try pulling from ost5h_thread_event instead so we can filter by person who closed the ticket
-		$sql = "SELECT thread_id FROM ost5h_thread_event WHERE staff_id ='" . $staff_id . "' AND event_id = '2' AND timestamp >= DATE_ADD(CURDATE(), INTERVAL -5 DAY)";
+		$sql = "SELECT thread_id FROM ost5h_thread_event WHERE staff_id ='" . $staffID . "' AND event_id = '2' AND timestamp >= DATE_ADD(CURDATE(), INTERVAL -5 DAY)";
 		$result = $this->cesQuery($sql);
 		
 		//Dump all of this into a normal type array
@@ -86,7 +86,7 @@
 				$threads[$x]->debugID = $this->fillDebugID($row['thread_id']);
 				// need to call response/ service time functions here
 				//calling function as a test for now
-				$threads[$x]->responseTime = $this->getResponseTime($row['thread_id'], $staff_id);
+				$threads[$x]->responseTime = $this->getResponseTime($row['thread_id'], $staffID);
 				$threads[$x]->serviceTime = $this->getServiceTime($row['thread_id']);
 				$threads[$x]->createDate = $this->getCreateDate($row['thread_id']);
 				
@@ -104,7 +104,7 @@
 		// Get all the time stamps for thread
 		// I  dont even think we actually need ost5h_thread, being created shows up as an entry
 		//$sql = "SELECT created, poster, staff_id FROM ost5h_thread_entry WHERE thread_id = " . $threadID . " UNION SELECT created, created, created FROM ost5h_thread WHERE id = " . $threadID . " ORDER BY created ASC";
-		$sql = "SELECT created, poster, staff_id FROM ost5h_thread_entry WHERE thread_id = " . $threadID . " ORDER BY created ASC";
+		$sql = "SELECT created, poster, staff_id, user_id FROM ost5h_thread_entry WHERE thread_id = " . $threadID . " ORDER BY created ASC";
 		
 		$row = null;
 		$result = null;
@@ -130,7 +130,9 @@
 				if ($x == 0)
 				{
 					$ogPoster = $row['poster'];
-					$ogPosterEmail = $this->getPosterEmail($row['poster']);
+					//$ogPosterEmail = $this->getPosterEmail($row['poster']);
+					// Switching to get email by userid for performance reason
+					$ogPosterEmail = $this->getUserEmail($row['user_id']);
 				}
 				
 				
