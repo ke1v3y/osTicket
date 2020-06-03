@@ -5,8 +5,7 @@
  {
 	 
 	
-	 
-	public $user = array();
+	public $thread = array();
 	 
 	 // Function for sql queries, just needs passed sql statment
 	function cesQuery(string $sql)
@@ -33,11 +32,10 @@
 		return $result;
 	}
 	 
-	 // This is the "main function"
-	 // I should probably rename this main and get the users in another function
-	function getUsers()
+	// Get users for a given thread
+	function getUsers($threadID)
 	{
-		$sql = "SELECT DISTINCT poster, staff_id FROM ost5h_thread_entry WHERE staff_id != 0";
+		$sql = "SELECT DISTINCT poster, staff_id FROM ost5h_thread_entry WHERE staff_id != 0 AND thread_id = '". $threadID . "'";
 		$result = $this->cesQuery($sql);
 		
 		if ($result->num_rows > 0) 
@@ -51,16 +49,18 @@
 				$this->user[$x]= new CEUser;
 				$this->user[$x]->username=$row['poster'];
 				//Populate team
-				$this->user[$x]->team= $this->getTeam($row['staff_id']);
+				$this->user[$x]->team = $this->getTeam($row['staff_id']);
+				
+				// Not using this now
 				//Need to get threads per user now
-				$this->user[$x]->threads = $this->getThreads($row['staff_id']);
+				//$this->user[$x]->threads = $this->getThreads($row['staff_id']);
 				$x++;
 			}
 		}
 		return $this->user;
 	}
 	
-	function getThreads($staffID)
+	function getThreads($start, $end)
 	{
 
 		
@@ -69,7 +69,15 @@
 		//$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE staff_id ='" . $nameOfUser . "' AND ost5h_thread_entry.created >= DATE_ADD(CURDATE(), INTERVAL -30 DAY)"; 
 		//$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_entry WHERE staff_id ='" . $staff_id . "' AND ost5h_thread_entry.created >= DATE_ADD(CURDATE(), INTERVAL -30 DAY)"; 
 		//going to try pulling from ost5h_thread_event instead so we can filter by person who closed the ticket
-		$sql = "SELECT thread_id FROM ost5h_thread_event WHERE staff_id ='" . $staffID . "' AND event_id = '2' AND timestamp >= DATE_ADD(CURDATE(), INTERVAL -5 DAY)";
+		//$sql = "SELECT thread_id FROM ost5h_thread_event WHERE staff_id ='" . $staffID . "' AND event_id = '2' AND timestamp >= DATE_ADD(CURDATE(), INTERVAL -5 DAY)";
+		
+		// Not filtering by user any more (for threads)
+		//$sql = "SELECT thread_id FROM ost5h_thread_event WHERE event_id = '2' AND timestamp >= DATE_ADD(CURDATE(), INTERVAL -7 DAY)";
+		
+		// This gets tickets filtering by closed time - prob need to change that
+		//$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_event WHERE event_id = '2' AND timestamp >= '" . $start . "' AND timestamp <= '" . $end . "'";
+		//By created
+		$sql = "SELECT DISTINCT thread_id FROM ost5h_thread_event WHERE event_id = '1' AND timestamp >= '" . $start . "' AND timestamp <= '" . $end . "'";
 		$result = $this->cesQuery($sql);
 		
 		//Dump all of this into a normal type array
@@ -81,6 +89,8 @@
 			// output data of each row
 			while($row = $result->fetch_assoc()) 
 			{	
+			
+				/*
 				$threads[$x] = new ThreadDetails;
 				$threads[$x]->id = $row['thread_id'];
 				$threads[$x]->debugID = $this->fillDebugID($row['thread_id']);
@@ -90,13 +100,37 @@
 				$threads[$x]->serviceTime = $this->getServiceTime($row['thread_id']);
 				$threads[$x]->createDate = $this->getCreateDate($row['thread_id']);
 				
+				// Get users for each thread
+				$threads[$x]->users = $this->getUsers($row['thread_id']);
+				
+				$x++;*/
+				
+			
+				$threads[$row['thread_id']] = new ThreadDetails;
+				$threads[$row['thread_id']]->id = $row['thread_id'];
+				$threads[$row['thread_id']]->debugID = $this->fillDebugID($row['thread_id']);
+				// need to call response/ service time functions here
+				//calling function as a test for now
+				$threads[$row['thread_id']]->responseTime = $this->getResponseTime($row['thread_id'], $staffID);
+				$threads[$row['thread_id']]->serviceTime = $this->getServiceTime($row['thread_id']);
+				$threads[$row['thread_id']]->createDate = $this->
+				($row['thread_id']);
+				
+				// Get users for each thread
+				$threads[$row['thread_id']]->users = $this->getUsers($row['thread_id']);
+				
 				$x++;
+				
+				
 			}
 		}
+		
+		$this->thread = $threads;
+		
 		return $threads;
 	}
 	
-	function getResponseTime($threadID, $staffID)
+	function getResponseTime($threadID)
 	{
 
 
@@ -156,12 +190,12 @@
 				echo( "OGPoster: " . $ogPoster . "</br>");*/
 				
 				//scanario one
-				// This is not the first run, Last message is external, previous message did not come from user AND POST WAS MADE BY USER
-				$s1 = (isset($prevName) && ($row['poster'] != $prevName) && $prevStaffID == '0' && $staffID == $row['staff_id']);
+				// This is not the first run, Last message is external, previous message did not come from user
+				$s1 = (isset($prevName) && ($row['poster'] != $prevName) && $prevStaffID == '0');
 				
 				//scenario two
 				// This is not the first run, last messsage is the ticket creater who is internal AND POST WAS MADE BY USER
-				$s2 = ( isset($prevName) && $ogPoster == $row['poster'] && $this->checkEmail($ogPosterEmail) && $staffID == $row['staff_id'] );
+				$s2 = ( isset($prevName) && $ogPoster == $row['poster'] && $this->checkEmail($ogPosterEmail) );
 				
 				//echo( "s1: " . $s1 . "</br>");
 				//echo( "s2: " . $s2 . "</br>");
@@ -337,7 +371,7 @@
 		// Go hour by hour, see if its an off hour, if it is - remove it from $diff
 		//3600 seconds = one hour
 		//60 seconds = one minute (duh)
-		$interval = 60;
+		$interval = 300;
 		for( $x = $stampTwo; $x < $stampOne; $x = $x + $interval)
 		{
 			
@@ -556,7 +590,10 @@
 	// This function needs to take poster from the get users function
 	// And be able to return the team the user belongs to
 	function getTeam($staffID)
-	{	
+	{
+	
+	$team = array();
+		
 	$sql = "SELECT ost5h_team.name FROM ost5h_team_member, ost5h_team WHERE ost5h_team_member.staff_id = " . $staffID . " AND ost5h_team_member.team_id = ost5h_team.team_id";
 		
 		// This should only be returning one row
@@ -567,7 +604,10 @@
 			// In the unlikely event there are two rows this will just take the last one
 			while($row = $result->fetch_assoc())
 			{
-				$team = $row['name'];
+				//Users can belong to more than one team, making it an array
+				//$team = $row['name'];
+				//append array
+				array_push($team,$row['name']);
 			}
 		}
 		
@@ -619,8 +659,8 @@
  class CEUser
  {
 	 public $username;
-	 public $team;
-	 public $threads = array();
+	 public $team = array();
+	 //public $threads = array();
  }
  
  class ThreadDetails
@@ -630,6 +670,7 @@
 	 public $createDate;
 	 public $serviceTime = '0';
 	 public $responseTime = '0';
+	 public $users = array();
 	 
  }
  
@@ -733,5 +774,135 @@
 		// We only are of these days
 		return array($MDay, $LD, $TH, $Bf, $Ch, $Che, $Ny, $Nye, $Fj);
 		
+	}
+ }
+ 
+ //Handle writing data to and from our flat file
+ class CEFileHandler
+ {
+	public $thread = array();
+	 
+	 
+	 // Take string and explode it into an object
+	function toObject($stringT)
+	{
+		// Call CEReport for object structure for our string data
+		//$this = new CEReport();
+
+		$stringThreads = explode("|",$stringT);
+
+		foreach($stringThreads as $stringThread)
+		{
+			//echo $stringThread;
+			//echo "</br>";
+			
+			$stringFields = explode("~",$stringThread);
+			
+			//Number of feilds is constant
+			//id
+			$id = $stringFields[0];
+			$this->thread[$id] = new ThreadDetails;
+			$this->thread[$id]->id = $id;
+			//debug id
+			$this->thread[$id]->debugID = $stringFields[1];
+			//creation time
+			$this->thread[$id]->createDate = $stringFields[2];
+			//service time
+			$this->thread[$id]->serviceTime = $stringFields[3];
+			//response time
+			$this->thread[$id]->responseTime = $stringFields[4];
+			//user
+			$users = explode("*",$stringFields[5]);
+			
+			
+			$x=0;
+			foreach($users as $stringUser)
+			{
+				$userDetails = explode("^",$stringUser);
+				
+				$this->thread[$id]->users[$x] = new CEUser;
+				$this->thread[$id]->users[$x]->username = $userDetails[0];
+				
+				$teams = array();
+				
+				// Go through array except the first one!
+				for($i=1; $i < count($userDetails); $i++)
+				{
+					array_push($teams,$userDetails[$i]);
+				}
+				
+				$this->thread[$id]->users[$x]->team = $teams;
+				
+				$x++;
+			}
+		}
+		//print_r($this);
+		return $this;
+	}
+	 
+	 // Take object and put it into a string
+	function toString($thisReport)
+	{
+		//print("<pre>".print_r($thisReport,true)."</pre>");
+		foreach ($thisReport as $thread)
+		{
+			
+			//print_r($thread);
+			
+			//build flat file string
+			// | is the delimeter for threads
+			// ~ is the delimeter for top level fields
+			// * is the delimeter for user fields
+			// ^ is the delimeter for team feilds (i before e except after f)
+			// Should look like this but without spaces
+			// | id ~ debugid ~ createdate ~ servicetime ~ responsetime ~ userone ^ team one ^ team two * usertwo ^ team one ^ team two * userthree ^ team one ^ team two |
+			
+			$ffString .= $thread->id;
+			$ffString .= "~";
+			$ffString .= $thread->debugID;
+			$ffString .= "~";
+			$ffString .= $thread->createDate;
+			$ffString .= "~";
+			$ffString .= $thread->serviceTime;
+			$ffString .= "~";
+			$ffString .= $thread->responseTime;
+			$ffString .= "~";
+			
+			//Get users from object
+			foreach($thread->users as $user)
+			{
+				$ffString .= $user->username;
+				
+				
+				foreach($user->team as $team)
+				{
+					$ffString .= "^";
+					$ffString .= $team;
+				}
+				
+				
+				$ffString .= "*";
+			}
+			
+			$ffString .= "|";
+
+		}
+
+		return $ffString;
+	}
+	
+	//This doenst work but it doesnt need to
+	function mergeData($masterObj, $newObj)
+	{
+		foreach($newObj as $newThread)
+		{
+			$id = $newThread->id;
+			
+			
+			
+			$masterObj[$id] = $newObj[$id];
+			
+		}
+		return $materObj;
 	}
  }
