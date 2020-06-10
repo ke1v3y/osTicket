@@ -1,5 +1,5 @@
 <?PHP
-// Man who makes mistake in elevator, is wrong on many levels... much like this class
+// Man who makes mistake in elevator, is wrong on many levels... much like these objects
 // This class returns an object with all the data needed for statistics on the ticketing system
  class CEReport 
  {
@@ -44,8 +44,7 @@
 			// output data of each row
 			while($row = $result->fetch_assoc()) 
 			{
-				//TO DO:
-				// Need to make sure users are internal only
+
 				$this->user[$x]= new CEUser;
 				$this->user[$x]->username=$row['poster'];
 				//Populate team
@@ -90,22 +89,6 @@
 			while($row = $result->fetch_assoc()) 
 			{	
 			
-				/*
-				$threads[$x] = new ThreadDetails;
-				$threads[$x]->id = $row['thread_id'];
-				$threads[$x]->debugID = $this->fillDebugID($row['thread_id']);
-				// need to call response/ service time functions here
-				//calling function as a test for now
-				$threads[$x]->responseTime = $this->getResponseTime($row['thread_id'], $staffID);
-				$threads[$x]->serviceTime = $this->getServiceTime($row['thread_id']);
-				$threads[$x]->createDate = $this->getCreateDate($row['thread_id']);
-				
-				// Get users for each thread
-				$threads[$x]->users = $this->getUsers($row['thread_id']);
-				
-				$x++;*/
-				
-			
 				$threads[$row['thread_id']] = new ThreadDetails;
 				$threads[$row['thread_id']]->id = $row['thread_id'];
 				$threads[$row['thread_id']]->debugID = $this->fillDebugID($row['thread_id']);
@@ -113,8 +96,7 @@
 				//calling function as a test for now
 				$threads[$row['thread_id']]->responseTime = $this->getResponseTime($row['thread_id'], $staffID);
 				$threads[$row['thread_id']]->serviceTime = $this->getServiceTime($row['thread_id']);
-				$threads[$row['thread_id']]->createDate = $this->
-				($row['thread_id']);
+				$threads[$row['thread_id']]->createDate = $this->getCreateDate($row['thread_id']);
 				
 				// Get users for each thread
 				$threads[$row['thread_id']]->users = $this->getUsers($row['thread_id']);
@@ -168,26 +150,6 @@
 					// Switching to get email by userid for performance reason
 					$ogPosterEmail = $this->getUserEmail($row['user_id']);
 				}
-				
-				
-				
-				// need to make sure prevName/prevDate are not null
-				// If they are null this is presumably the first loop and we can skip stuff
-				
-				//not being used anymore
-				/*//Get poster email once now instead of twice later
-				if( $row['staff_id'] != 0)
-				{
-				$posterEmail = $this->getstaffEmail($row['staff_id']);
-				}
-				else
-				{
-					$posterEmail = 0;
-				}*/
-				/*echo( "row staff id: " . $row['staff_id'] . "</br>");
-				echo( "staff id: " . $staffID . "</br>");
-				echo( "Poster: " . $row['poster'] . "</br>");
-				echo( "OGPoster: " . $ogPoster . "</br>");*/
 				
 				//scanario one
 				// This is not the first run, Last message is external, previous message did not come from user
@@ -269,22 +231,15 @@
 			}
 		}
 		
-		// Debug
-		//echo("Created: " . $created . "---- Closed: " . $closed . "</br>");
-		
 		
 		// Calculate Difference
 		$serviceTime = $this->timeStampDIfference($created,$closed);
-		
-		//Debug
-		//echo ("ServiceTime 1: " . $serviceTime . " </br> ");
 		
 		
 		// Subtract Time the ticket was closed
 		$serviceTime = $serviceTime - $this->getClosedTime($threadID);
 		
-		//Debug
-		//echo ("ServiceTime 2: " . $serviceTime . " </br> ");
+
 	 
 		if($serviceTime < 0)
 		{
@@ -301,23 +256,12 @@
 	// Gets differnece without off hours
 	function timeStampDIfference($stampOne, $stampTwo)
 	{
-		//echo("</br> </br> </br> Start timeStampDIfference Function </br> </br> </br>");
-		/*
-		echo($stampOne);
-		echo("</br>");
-		echo($stampTwo);
-		echo("</br>");
-			*/
+
 	
 		$stampOne = strtotime($stampOne);
 		$stampTwo = strtotime($stampTwo);
 		
-		/*
-		echo($stampOne);
-		echo("</br>");
-		echo($stampTwo);
-		echo("</br>");
-		*/
+
 		
 		// Need to set time zone to eastern here,
 		// Time zone is used for some of the off hour calculations,
@@ -341,10 +285,6 @@
 		
 		$diff = $diff - $this->getOffHours($stampOne,$stampTwo);
 		
-		// set time zone back to utc
-		//date_default_timezone_set("UTC");
-		
-		//echo("</br> </br> </br> End timeStampDIfference Function </br> </br> </br>");
 		
 		return $diff;
 	}
@@ -352,7 +292,7 @@
 	//M
 	function getOffHours($stampOne, $stampTwo)
 	{
-		//echo("</br> </br> </br> Start GetOffHours Function </br> </br> </br>");
+		
 		
 		//Need to make sure stampTwo is smaller... its just easier that way
 		if($stampOne < $stampTwo)
@@ -386,7 +326,6 @@
 			}
 			
 			
-			//echo("stampOne: " . $stampOne . "------- x: " . $x . "------- diff: " . $diff . "--------- G of x: " . date('G',$x) . "</br>");
 			// check and see if its an hour after hours
 			// maybe at some point this should be poitned to DB for working hours of company
 			if (date('G',$x) < 8 || date('G',$x) > 16)
@@ -397,12 +336,7 @@
 			{
 				$afterHours = false;
 			}
-			//date_default_timezone_set("US/Eastern");
-			//echo($isWeekend);
-			//echo("</br>");
-			//($afterHours);
-			//echo("</br>");
-			//echo($diff);
+
 			
 			// if its after hours or a weekend hour, remove hour from $$diff
 			if( $afterHours || $isWeekend || $this->checkHoliday($x,$CEHolidays->holidays) )

@@ -1,32 +1,13 @@
 <?PHP
-
-
 session_start();
+
 include('../include/ces.reports.php');
 
 $thisReport = new CEReport();
+
 //$thisReport->getThreads('2020-01-01','2020-01-30');
 // Get new data
 //$thisReport->getThreads(date('Y-m-d', strtotime('-5 days')), date('Y-m-d'));
-/*
-Not using json anymore
-//Get the old data
-$inp = file_get_contents('reportingData.json');
-$jsonData = json_decode($inp);
-
-//Merge json data and 'live' data
-$reportData = array_replace_recursive((array) $jsonData,(array) $thisReport->thread);
-
-//Need this to convert from array to object in a way php can use
-//probably a better way to do this
-$reportData = json_decode(json_encode($reportData));
-
-
-$myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
-$txt = print_r($thisReport->thread,true);
-fwrite($myfile, print_r($txt,true));
-fclose($myfile);
-*/
 
 
 
@@ -35,12 +16,9 @@ $fileHandler = new CEFileHandler();
 $fileHandler->toObject(file_get_contents('reportingData.seth'));
 
 
-
+// Will need to merge this with new data before going live using array_replace_recursive()
 $reportData = $fileHandler->thread;
 
-//print("<pre>".print_r($thisReport->thread,true)."</pre>");
-//echo('delemiter');
-//print("<pre>".print_r($reportData,true)."</pre>");
 
 // set user changeable variables here (default values)
 
@@ -76,6 +54,12 @@ $responseTimesRed;
 
 $dates;
 
+$ceCount = 0;
+$blueCount = 0;
+$greenCount = 0;
+$orangeCount = 0;
+$redCount = 0;
+
 // This could be more effeciant - maybe by going though data and sticking them into an array or object based on date
 // Something like this maybe:  team -> date -> times
 // not sure if its worth it ATM, when done I will check performance
@@ -102,6 +86,7 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 	
 	foreach ($reportData as $thread)
 	{
+		/* Moving these
 		//reset some variables
 		$blueServ = null;
 		$blueResp = null;
@@ -111,9 +96,26 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 		$orangeResp = null;
 		$redServ = null;
 		$redResp = null;
-		
+		*/
 			if ( date('m/d/y',(int) $thread->createDate) == date('m/d/y',$i) )
 			{
+				//reset some variables
+				$blueServ = null;
+				$blueResp = null;
+				$greenServ = null;
+				$greenResp = null;
+				$orangeServ = null;
+				$orangeResp = null;
+				$redServ = null;
+				$redResp = null;
+				
+				$blueFlg = 0;
+				$greenFlg = 0;
+				$orangeFlg = 0;
+				$redFlg = 0;
+				
+				$ceCount++;
+				
 				
 				// Get data per team
 				// Need to only add one to array per team, will set a variable here
@@ -124,24 +126,43 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 					{
 						switch ($team) {
 							case "Blue Team":
-								//echo("</br>" . $thread->serviceTime ."</br>");
-								$blueServ = $thread->serviceTime;
-								$blueResp = $thread->responseTime;
+								if ($blueFlg == 0)
+								{
+									$blueServ = $thread->serviceTime;
+									$blueResp = $thread->responseTime;
+									$blueCount++;
+									$blueFlg++;
+								}
 								break;
 								
 							case "Green Team":
-								$greenServ = $thread->serviceTime;
-								$greenResp = $thread->responseTime;
+								if ($greenFlg == 0)
+								{
+									$greenServ = $thread->serviceTime;
+									$greenResp = $thread->responseTime;
+									$greenCount++;
+									$greenFlg++;
+								}
 								break;
 								
 							case "Orange Team":
-								$orangeServ = $thread->serviceTime;
-								$orangeResp = $thread->responseTime;
+								if ($orangeFlg == 0)
+								{
+									$orangeServ = $thread->serviceTime;
+									$orangeResp = $thread->responseTime;
+									$orangeCount++;
+									$orangeFlg++;
+								}
 								break;
 								
 							case "Red Team":
-								$redServ = $thread->serviceTime;
-								$redResp = $thread->responseTime;
+								if ($redFlg == 0)
+								{
+									$redServ = $thread->serviceTime;
+									$redResp = $thread->responseTime;
+									$redCount++;
+									$redFlg++;
+								}
 								break;
 						}
 					}
@@ -201,30 +222,63 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 	if(count($serviceTimeAvg) != 0 && count($responseTimeAvg) != 0 && count($serviceTimeAvgBlue) != 0 && count($responseTimeAvgBlue) != 0 && count($serviceTimeAvgGreen) != 0 && count($responseTimeAvgGreen) != 0 && count($serviceTimeAvgOrange) != 0 && count($responseTimeAvgOrange) != 0 && count($serviceTimeAvgRed) != 0 && count($responseTimeAvgRed) != 0 )
 	{
 		//all
-		$serviceTimes .= (array_sum($serviceTimeAvg)/count($serviceTimeAvg))/60 . ", ";
-		$responseTimes .= (array_sum($responseTimeAvg)/count($responseTimeAvg))/60 . ", ";
+		$serviceTimes .= round((array_sum($serviceTimeAvg)/count($serviceTimeAvg))/60) . ", ";
+		$responseTimes .= round((array_sum($responseTimeAvg)/count($responseTimeAvg))/60) . ", ";
 		//blue
-		$serviceTimesBlue .= (array_sum($serviceTimeAvgBlue)/count($serviceTimeAvgBlue))/60 . ", ";
-		$responseTimesBlue .= (array_sum($responseTimeAvgBlue)/count($responseTimeAvgBlue))/60 . ", ";
+		$serviceTimesBlue .= round((array_sum($serviceTimeAvgBlue)/count($serviceTimeAvgBlue))/60) . ", ";
+		$responseTimesBlue .= round((array_sum($responseTimeAvgBlue)/count($responseTimeAvgBlue))/60) . ", ";
 		//green
-		$serviceTimesGreen .= (array_sum($serviceTimeAvgGreen)/count($serviceTimeAvgGreen))/60 . ", ";
-		$responseTimesGreen .= (array_sum($responseTimeAvgGreen)/count($responseTimeAvgGreen))/60 . ", ";
+		$serviceTimesGreen .= round((array_sum($serviceTimeAvgGreen)/count($serviceTimeAvgGreen))/60) . ", ";
+		$responseTimesGreen .= round((array_sum($responseTimeAvgGreen)/count($responseTimeAvgGreen))/60) . ", ";
 		//orange
-		$serviceTimesOrange .= (array_sum($serviceTimeAvgOrange)/count($serviceTimeAvgOrange))/60 . ", ";
-		$responseTimesOrange .= (array_sum($responseTimeAvgOrange)/count($responseTimeAvgOrange))/60 . ", ";
+		$serviceTimesOrange .= round((array_sum($serviceTimeAvgOrange)/count($serviceTimeAvgOrange))/60) . ", ";
+		$responseTimesOrange .= round((array_sum($responseTimeAvgOrange)/count($responseTimeAvgOrange))/60) . ", ";
 		//red
-		$serviceTimesRed .= (array_sum($serviceTimeAvgRed)/count($serviceTimeAvgRed))/60 . ", ";
-		$responseTimesRed .= (array_sum($responseTimeAvgRed)/count($responseTimeAvgRed))/60 . ", ";
+		$serviceTimesRed .= round((array_sum($serviceTimeAvgRed)/count($serviceTimeAvgRed))/60) . ", ";
+		$responseTimesRed .= round((array_sum($responseTimeAvgRed)/count($responseTimeAvgRed))/60) . ", ";
 		
 		
 		//dates
 		$dates .= "'" . date('m/d/y',$i) . "', ";
 	}
-
-
-	
 	
 }
+
+
+// Calcaultions for table at the bottom
+$serviceTimeAvgArray = explode(", ", $serviceTimes);
+$serviceTimeAvgTotal = array_sum($serviceTimeAvgArray)/count($serviceTimeAvgArray);
+
+$responseTimeAvgArray = explode(", ", $responseTimes);
+$responseTimeAvgTotal = array_sum($responseTimeAvgArray)/count($responseTimeAvgArray);
+
+//Blue
+$serviceTimeAvgArrayBlue = explode(", ", $serviceTimesBlue);
+$serviceTimeAvgTotalBlue = array_sum($serviceTimeAvgArrayBlue)/count($serviceTimeAvgArrayBlue);
+
+$responseTimeAvgArrayBlue = explode(", ", $responseTimesBlue);
+$responseTimeAvgTotalBlue = array_sum($responseTimeAvgArrayBlue)/count($responseTimeAvgArrayBlue);
+
+//Green
+$serviceTimeAvgArrayGreen = explode(", ", $serviceTimesGreen);
+$serviceTimeAvgTotalGreen = array_sum($serviceTimeAvgArrayGreen)/count($serviceTimeAvgArrayGreen);
+
+$responseTimeAvgArrayGreen = explode(", ", $responseTimesGreen);
+$responseTimeAvgTotalGreen = array_sum($responseTimeAvgArrayGreen)/count($responseTimeAvgArrayGreen);
+
+//Orange
+$serviceTimeAvgArrayOrange = explode(", ", $serviceTimesOrange);
+$serviceTimeAvgTotalOrange = array_sum($serviceTimeAvgArrayOrange)/count($serviceTimeAvgArrayOrange);
+
+$responseTimeAvgArrayOrange = explode(", ", $responseTimesOrange);
+$responseTimeAvgTotalOrange = array_sum($responseTimeAvgArrayOrange)/count($responseTimeAvgArrayOrange);
+
+//Red
+$serviceTimeAvgArrayRed = explode(", ", $serviceTimesRed);
+$serviceTimeAvgTotalRed = array_sum($serviceTimeAvgArrayRed)/count($serviceTimeAvgArrayRed);
+
+$responseTimeAvgArrayRed = explode(", ", $responseTimesRed);
+$responseTimeAvgTotalRed = array_sum($responseTimeAvgArrayRed)/count($responseTimeAvgArrayRed);
 
 ?>
 <html>
@@ -234,10 +288,10 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 
 
 	<div style="width:95%; margin:0 auto;">
-		<table style="width:45%; margin:0 auto;">
+		<table style="width:65%; margin:0 auto;">
 			<form action="ces.reports.loader.php" method="post">
 			<td>Start Date: <input type="date" name="sDate" value="<? echo(date('Y-m-d',strtotime($startDate))); ?>"></td>
-			<td>E-End Date: <input type="date" name="eDate" value="<? echo(date('Y-m-d',strtotime($endDate))); ?>" ></td>
+			<td>End Date: <input type="date" name="eDate" value="<? echo(date('Y-m-d',strtotime($endDate))); ?>" ></td>
 			<td><input type="submit"></td>
 			</form>
 		<table>
@@ -295,32 +349,7 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 				yAxisID: 'y-axis-1'
 			}]
 		};
-/*
-		window.onload = function() {
-			var ctx = document.getElementById('canvas').getContext('2d');
-			window.myLine = Chart.Line(ctx, {
-				data: lineChartData,
-				options: {
-					responsive: true,
-					hoverMode: 'index',
-					stacked: false,
-					title: {
-						display: true,
-						text: 'Service Time'
-					},
-					scales: {
-						yAxes: [{
-							type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
-							display: true,
-							position: 'left',
-							id: 'y-axis-1',
-						}],
-					}
-				}
-			});
-		};
-	*/	
-		
+	
 		
 		
 			var lineChartData2 = {
@@ -381,6 +410,10 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 							display: true,
 							position: 'left',
 							id: 'y-axis-1',
+							scaleLabel: {
+								display: true,
+								labelString: 'Minutes',
+							},
 						}],
 					}
 				}
@@ -402,6 +435,10 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 							display: true,
 							position: 'left',
 							id: 'y-axis-1',
+							scaleLabel: {
+								display: true,
+								labelString: 'Minutes',
+							},
 						}],
 					}
 				}
@@ -410,5 +447,47 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 
 
 	</script>
+	</br>
+	<table style="width:95%; margin:0 auto; border: 1px solid grey; text-align: center; ">
+		<tr>
+			<th>Team</th>
+			<th>Opened Tickets</th>
+			<th>Service Time</th>
+			<th>Response Time</th>
+		</tr>
+		<tr>
+			<td>C&E Overall</td>
+			<td><? echo($ceCount); ?></td>
+			<td><? echo round($serviceTimeAvgTotal); ?> Minutes</td>
+			<td><? echo round($responseTimeAvgTotal); ?> Minutes</td>
+		</tr>
+		<tr>
+			<td>Blue Team</td>
+			<td><? echo($blueCount); ?></td>
+			<td><? echo round($serviceTimeAvgTotalBlue); ?> Minutes</td>
+			<td><? echo round($responseTimeAvgTotalBlue); ?> Minutes</td>
+		</tr>
+		<tr>
+			<td>Green Team</td>
+			<td><? echo($greenCount); ?></td>
+			<td><? echo round($serviceTimeAvgTotalGreen); ?> Minutes</td>
+			<td><? echo round($responseTimeAvgTotalGreen); ?> Minutes</td>
+		</tr>
+		<tr>
+			<td>Orange Team</td>
+			<td><? echo($orangeCount); ?></td>
+			<td><? echo round($serviceTimeAvgTotalOrange); ?> Minutes</td>
+			<td><? echo round($responseTimeAvgTotalOrange); ?> Minutes</td>
+		</tr>
+		<tr>
+			<td>Red Team</td>
+			<td><? echo($redCount); ?></td>
+			<td><? echo round($serviceTimeAvgTotalRed); ?> Minutes</td>
+			<td><? echo round($responseTimeAvgTotalRed); ?> Minutes</td>
+		</tr>
+	
+	
+	
+	</table>
 </body>
 </html>

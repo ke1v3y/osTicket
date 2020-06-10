@@ -47,7 +47,7 @@ $ost->addExtraHeader('<meta name="tip-namespace" content="dashboard.dashboard" /
     "$('#content').data('tipNamespace', 'dashboard.dashboard');");
 
 require(STAFFINC_DIR.'header.inc.php');
-echo('<iframe src="ces.reports.loader.php" style ="display:block; overflow:auto; height:900px; width:100%; overflow:hidden; border:none"></iframe>');
+echo('<iframe src="ces.reports.loader.php" style ="display:block; overflow:auto; height:1100px; width:100%; overflow:hidden; border:none"></iframe>');
 //require_once(STAFFINC_DIR.'dashboard.inc.php');
 include(STAFFINC_DIR.'footer.inc.php');
 ?>
