@@ -12,10 +12,10 @@ $fileHandler = new CEFileHandler();
 
 
 //Grab last 30 days, except 4 days that will be loaded with graphs
-//$thisReport->getThreads(date('Y-m-d', strtotime('-30 days')), date('Y-m-d', strtotime('-4 days')));
+$thisReport->getThreads(date('Y-m-d', strtotime('-30 days')), date('Y-m-d', strtotime('-1 days')));
 
 //Can uncomment this to grab a timezone to reload data
-$thisReport->getThreads('2020-04-01','2020-05-30');
+//$thisReport->getThreads('2020-05-01','2020-08-01');
 
 
 /* Not using json anymore
@@ -33,7 +33,7 @@ $inp = null;
 
 
 //Get old data
-$oldObj = $fileHandler->toObject(file_get_contents('reportingData.seth'));
+$oldObj = $fileHandler->toObject(file_get_contents('reportingData.sts'));
 
 
 $newObj = array_replace_recursive($oldObj->thread,$thisReport->thread);
@@ -46,9 +46,12 @@ $stringT = $fileHandler->toString($newObj);
 
 
 
-$myfile = fopen("reportingData.seth", "w") or die("Unable to open file!");
+$myfile = fopen("reportingData.sts", "w") or die("Unable to open file!");
 //$txt = json_encode($result);
 //$txt = ((array) $thisReport->thread);
 //$txt = $tempArray;
 fwrite($myfile, $stringT);
 fclose($myfile);
+
+
+//echo "<pre>".print_r($newObj,true)."</pre>";

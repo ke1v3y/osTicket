@@ -13,7 +13,7 @@ $thisReport = new CEReport();
 
 //Get old data
 $fileHandler = new CEFileHandler();
-$fileHandler->toObject(file_get_contents('reportingData.seth'));
+$fileHandler->toObject(file_get_contents('reportingData.sts'));
 
 
 // Will need to merge this with new data before going live using array_replace_recursive()
@@ -84,6 +84,9 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 	$serviceTimeAvgRed = array();
 	$responseTimeAvgRed = array();
 	
+	$serviceTimeAvgcca = array();
+	$responseTimeAvgcca = array();
+	
 	foreach ($reportData as $thread)
 	{
 		/* Moving these
@@ -107,7 +110,9 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 				$orangeServ = null;
 				$orangeResp = null;
 				$redServ = null;
-				$redResp = null;
+				$redResp = null;				
+				$ccaServ = null;
+				$ccaResp = null;
 				
 				$blueFlg = 0;
 				$greenFlg = 0;
@@ -120,53 +125,39 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 				// Get data per team
 				// Need to only add one to array per team, will set a variable here
 				// Then add it to array later in case there are mutlipe users on the ticket
-				foreach ($thread->users as $user)
-				{
-					foreach ($user->team as $team)
-					{
-						switch ($team) {
-							case "Blue Team":
-								if ($blueFlg == 0)
-								{
-									$blueServ = $thread->serviceTime;
-									$blueResp = $thread->responseTime;
-									$blueCount++;
-									$blueFlg++;
-								}
-								break;
-								
-							case "Green Team":
-								if ($greenFlg == 0)
-								{
-									$greenServ = $thread->serviceTime;
-									$greenResp = $thread->responseTime;
-									$greenCount++;
-									$greenFlg++;
-								}
-								break;
-								
-							case "Orange Team":
-								if ($orangeFlg == 0)
-								{
-									$orangeServ = $thread->serviceTime;
-									$orangeResp = $thread->responseTime;
-									$orangeCount++;
-									$orangeFlg++;
-								}
-								break;
-								
-							case "Red Team":
-								if ($redFlg == 0)
-								{
-									$redServ = $thread->serviceTime;
-									$redResp = $thread->responseTime;
-									$redCount++;
-									$redFlg++;
-								}
-								break;
-						}
-					}
+
+				switch ($thread->team) {
+					case "Blue Team":
+						$blueServ = $thread->serviceTime;
+						$blueResp = $thread->responseTime;
+						$blueCount++;
+						break;
+						
+					case "Green Team":
+						$greenServ = $thread->serviceTime;
+						$greenResp = $thread->responseTime;
+						$greenCount++;
+						break;
+						
+					case "Orange Team":
+						$orangeServ = $thread->serviceTime;
+						$orangeResp = $thread->responseTime;
+						$orangeCount++;;
+						break;
+						
+					case "Red Team":
+						$redServ = $thread->serviceTime;
+						$redResp = $thread->responseTime;
+						$redCount++;
+						break;
+						
+					case "CCA Team":
+						$ccaServ = $thread->serviceTime;
+						$ccaResp = $thread->responseTime;
+						$ccaCount++;
+						break;
 				}
+				
 				
 				
 				// we need to throw out results that are 0
@@ -181,7 +172,6 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 				}
 				
 				// Put team data into arrays
-				// TO DO - throw out results that are 0 here
 				if($blueServ != 0 && $blueServ != null)
 					array_push($serviceTimeAvgBlue,$blueServ);
 			
@@ -204,43 +194,104 @@ for($i = date('U', strtotime($startDate)) ; $i < date('U',strtotime($endDate)); 
 					array_push($serviceTimeAvgRed,$redServ);
 				
 				if($redResp != 0 && $redResp != null)
-					array_push($responseTimeAvgRed,$redResp);
+					array_push($responseTimeAvgRed,$redResp);				
+				
+				if($ccaServ != 0 && $ccaServ != null)
+					array_push($serviceTimeAvgcca,$ccaServ);
+				
+				if($ccaResp != 0 && $ccaResp != null)
+					array_push($responseTimeAvgcca,$ccaResp);
 			
 			}
-			
-			
-			
-			
-			
 	}
 
 	
 	
 	
 	
-	//sorry
-	if(count($serviceTimeAvg) != 0 && count($responseTimeAvg) != 0 && count($serviceTimeAvgBlue) != 0 && count($responseTimeAvgBlue) != 0 && count($serviceTimeAvgGreen) != 0 && count($responseTimeAvgGreen) != 0 && count($serviceTimeAvgOrange) != 0 && count($responseTimeAvgOrange) != 0 && count($serviceTimeAvgRed) != 0 && count($responseTimeAvgRed) != 0 )
-	{
+
 		//all
-		$serviceTimes .= round((array_sum($serviceTimeAvg)/count($serviceTimeAvg))/60) . ", ";
-		$responseTimes .= round((array_sum($responseTimeAvg)/count($responseTimeAvg))/60) . ", ";
-		//blue
-		$serviceTimesBlue .= round((array_sum($serviceTimeAvgBlue)/count($serviceTimeAvgBlue))/60) . ", ";
-		$responseTimesBlue .= round((array_sum($responseTimeAvgBlue)/count($responseTimeAvgBlue))/60) . ", ";
-		//green
-		$serviceTimesGreen .= round((array_sum($serviceTimeAvgGreen)/count($serviceTimeAvgGreen))/60) . ", ";
-		$responseTimesGreen .= round((array_sum($responseTimeAvgGreen)/count($responseTimeAvgGreen))/60) . ", ";
-		//orange
-		$serviceTimesOrange .= round((array_sum($serviceTimeAvgOrange)/count($serviceTimeAvgOrange))/60) . ", ";
-		$responseTimesOrange .= round((array_sum($responseTimeAvgOrange)/count($responseTimeAvgOrange))/60) . ", ";
-		//red
-		$serviceTimesRed .= round((array_sum($serviceTimeAvgRed)/count($serviceTimeAvgRed))/60) . ", ";
-		$responseTimesRed .= round((array_sum($responseTimeAvgRed)/count($responseTimeAvgRed))/60) . ", ";
+		if(count($serviceTimeAvg) != 0 && count($responseTimeAvg) != 0 )
+		{
+			$serviceTimes .= round((array_sum($serviceTimeAvg)/count($serviceTimeAvg))/60) . ", ";
+			$responseTimes .= round((array_sum($responseTimeAvg)/count($responseTimeAvg))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimes .= "0, ";
+			$responseTimes .= "0, ";
+		}
 		
+		//blue
+		if(count($serviceTimeAvgBlue) != 0 && count($responseTimeAvgBlue) != 0 )
+		{
+			$serviceTimesBlue .= round((array_sum($serviceTimeAvgBlue)/count($serviceTimeAvgBlue))/60) . ", ";
+			$responseTimesBlue .= round((array_sum($responseTimeAvgBlue)/count($responseTimeAvgBlue))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimesBlue .= "0, ";
+			$responseTimesBlue .= "0, ";
+		}
+		
+		//green
+		if(count($serviceTimeAvgGreen) != 0 && count($responseTimeAvgGreen) != 0 )
+		{
+			$serviceTimesGreen .= round((array_sum($serviceTimeAvgGreen)/count($serviceTimeAvgGreen))/60) . ", ";
+			$responseTimesGreen .= round((array_sum($responseTimeAvgGreen)/count($responseTimeAvgGreen))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimesGreen .= "0, ";
+			$responseTimesGreen .= "0, ";
+		}
+		
+		//orange
+		if(count($serviceTimeAvgOrange) != 0 && count($responseTimeAvgOrange) != 0 )
+		{
+			$serviceTimesOrange .= round((array_sum($serviceTimeAvgOrange)/count($serviceTimeAvgOrange))/60) . ", ";
+			$responseTimesOrange .= round((array_sum($responseTimeAvgOrange)/count($responseTimeAvgOrange))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimesOrange .= "0, ";
+			$responseTimesOrange .= "0, ";
+		}
+		
+		//red
+		if(count($serviceTimeAvgRed) != 0 && count($responseTimeAvgRed) != 0 )
+		{
+			$serviceTimesRed .= round((array_sum($serviceTimeAvgRed)/count($serviceTimeAvgRed))/60) . ", ";
+			$responseTimesRed .= round((array_sum($responseTimeAvgRed)/count($responseTimeAvgRed))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimesRed .= "0, ";
+			$responseTimesRed .= "0, ";
+		}
+		
+		//cca
+		if(count($serviceTimeAvgcca) != 0 )
+		{
+			$serviceTimescca .= round((array_sum($serviceTimeAvgcca)/count($serviceTimeAvgcca))/60) . ", ";
+		}
+		else
+		{
+			$serviceTimescca .= "0, ";
+		}
+		
+		if(count($responseTimeAvgcca) != 0)
+		{
+			$responseTimescca .= round((array_sum($responseTimeAvgcca)/count($responseTimeAvgcca))/60) . ", ";
+		}
+		else
+		{
+			$responseTimescca .= "0, ";
+		}
 		
 		//dates
 		$dates .= "'" . date('m/d/y',$i) . "', ";
-	}
+	
 	
 }
 
@@ -279,6 +330,14 @@ $serviceTimeAvgTotalRed = array_sum($serviceTimeAvgArrayRed)/count($serviceTimeA
 
 $responseTimeAvgArrayRed = explode(", ", $responseTimesRed);
 $responseTimeAvgTotalRed = array_sum($responseTimeAvgArrayRed)/count($responseTimeAvgArrayRed);
+
+//cca
+$serviceTimeAvgArraycca = explode(", ", $serviceTimescca);
+$serviceTimeAvgTotalcca = array_sum($serviceTimeAvgArrayRed)/count($serviceTimeAvgArrayRed);
+
+$responseTimeAvgArraycca = explode(", ", $responseTimescca);
+$responseTimeAvgTotalcca = array_sum($responseTimeAvgArraycca)/count($responseTimeAvgArraycca);
+
 
 ?>
 <html>
@@ -347,6 +406,13 @@ $responseTimeAvgTotalRed = array_sum($responseTimeAvgArrayRed)/count($responseTi
 				fill: false,
 				data: [<? echo $serviceTimesRed; ?>],
 				yAxisID: 'y-axis-1'
+			}, {
+				label: 'CCA Team',
+				backgroundColor: 'rgba(128, 0, 128, 0.8)',
+				borderColor: 'rgba(128, 0, 128, 0.8)',
+				fill: false,
+				data: [<? echo $serviceTimescca; ?>],
+				yAxisID: 'y-axis-1'
 			}]
 		};
 	
@@ -388,6 +454,13 @@ $responseTimeAvgTotalRed = array_sum($responseTimeAvgArrayRed)/count($responseTi
 				borderColor: 'rgba(255, 0, 0, 0.8)',
 				fill: false,
 				data: [<? echo $responseTimesRed; ?>],
+				yAxisID: 'y-axis-1'
+			}, {
+				label: 'CCA Team',
+				backgroundColor: 'rgba(128, 0, 128, 0.8)',
+				borderColor: 'rgba(128, 0, 128, 0.8)',
+				fill: false,
+				data: [<? echo $responseTimescca; ?>],
 				yAxisID: 'y-axis-1'
 			}]
 		};

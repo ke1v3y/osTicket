@@ -12,8 +12,8 @@
 	{
 		 //Sql query to get some thread details
 		$servername = "localhost";
-		$username = "";
-		$password = "";
+		$username = "helpdeskces";
+		$password = "Ioje0Wtpb78y";
 		$dbname = "helpdeskces_ostick";
 
 		// Create connection
@@ -33,6 +33,7 @@
 	}
 	 
 	// Get users for a given thread
+	// Not getting users now
 	function getUsers($threadID)
 	{
 		$sql = "SELECT DISTINCT poster, staff_id FROM ost5h_thread_entry WHERE staff_id != 0 AND thread_id = '". $threadID . "'";
@@ -99,7 +100,11 @@
 				$threads[$row['thread_id']]->createDate = $this->getCreateDate($row['thread_id']);
 				
 				// Get users for each thread
-				$threads[$row['thread_id']]->users = $this->getUsers($row['thread_id']);
+				// Not getting team by user anymore
+				//$threads[$row['thread_id']]->users = $this->getUsers($row['thread_id']);
+				
+				// Get team for ticket
+				$threads[$row['thread_id']]->team = $this->getTeam($threads[$row['thread_id']]->debugID);
 				
 				$x++;
 				
@@ -262,14 +267,7 @@
 		$stampTwo = strtotime($stampTwo);
 		
 
-		
-		// Need to set time zone to eastern here,
-		// Time zone is used for some of the off hour calculations,
-		// This needs to be done after strtotime because OSTicket seems
-		// to be handling time zone outside of normal php paramater
-		// also need to set timezone back to utc at end of this function
-		//date_default_timezone_set("US/Eastern");
-		//date_default_timezone_set("UTC");
+	
 		//Need to make sure stampTwo is smaller... its just easier that way
 		if($stampOne < $stampTwo)
 		{
@@ -289,7 +287,7 @@
 		return $diff;
 	}
 	
-	//M
+	
 	function getOffHours($stampOne, $stampTwo)
 	{
 		
@@ -523,7 +521,7 @@
 	
 	// This function needs to take poster from the get users function
 	// And be able to return the team the user belongs to
-	function getTeam($staffID)
+	function getUserTeam($staffID)
 	{
 	
 	$team = array();
@@ -542,6 +540,25 @@
 				//$team = $row['name'];
 				//append array
 				array_push($team,$row['name']);
+			}
+		}
+		
+		return $team;
+	}
+	
+	// We should get team by ticket instead of by user
+	function getTeam($objectID)
+	{
+			$sql  = "SELECT ost5h_team.name FROM ost5h_ticket JOIN ost5h_team on ost5h_team.team_id = ost5h_ticket.team_id WHERE ost5h_ticket.ticket_id = " . $objectID;
+		// This should only be returning one row
+		$result = $this->cesQuery($sql);
+		
+		if ($result->num_rows > 0) 
+		{
+			// In the unlikely event there are two rows this will just take the last one
+			while($row = $result->fetch_assoc())
+			{	
+				$team = $row['name'];
 			}
 		}
 		
@@ -589,7 +606,7 @@
  }
  
 
- 
+ // Not using this now - might use in a later version
  class CEUser
  {
 	 public $username;
@@ -605,6 +622,7 @@
 	 public $serviceTime = '0';
 	 public $responseTime = '0';
 	 public $users = array();
+	 public $team;
 	 
  }
  
@@ -745,30 +763,10 @@
 			$this->thread[$id]->serviceTime = $stringFields[3];
 			//response time
 			$this->thread[$id]->responseTime = $stringFields[4];
-			//user
-			$users = explode("*",$stringFields[5]);
+			//Team
+			$this->thread[$id]->team = $stringFields[5];
 			
 			
-			$x=0;
-			foreach($users as $stringUser)
-			{
-				$userDetails = explode("^",$stringUser);
-				
-				$this->thread[$id]->users[$x] = new CEUser;
-				$this->thread[$id]->users[$x]->username = $userDetails[0];
-				
-				$teams = array();
-				
-				// Go through array except the first one!
-				for($i=1; $i < count($userDetails); $i++)
-				{
-					array_push($teams,$userDetails[$i]);
-				}
-				
-				$this->thread[$id]->users[$x]->team = $teams;
-				
-				$x++;
-			}
 		}
 		//print_r($this);
 		return $this;
@@ -785,11 +783,9 @@
 			
 			//build flat file string
 			// | is the delimeter for threads
-			// ~ is the delimeter for top level fields
-			// * is the delimeter for user fields
-			// ^ is the delimeter for team feilds (i before e except after f)
+			// ~ is the delimeter for fields
 			// Should look like this but without spaces
-			// | id ~ debugid ~ createdate ~ servicetime ~ responsetime ~ userone ^ team one ^ team two * usertwo ^ team one ^ team two * userthree ^ team one ^ team two |
+			// | id ~ debugid ~ createdate ~ servicetime ~ responsetime ~ team |
 			
 			$ffString .= $thread->id;
 			$ffString .= "~";
@@ -801,22 +797,9 @@
 			$ffString .= "~";
 			$ffString .= $thread->responseTime;
 			$ffString .= "~";
+			$ffString .= $thread->team;
+			$ffString .= "~";
 			
-			//Get users from object
-			foreach($thread->users as $user)
-			{
-				$ffString .= $user->username;
-				
-				
-				foreach($user->team as $team)
-				{
-					$ffString .= "^";
-					$ffString .= $team;
-				}
-				
-				
-				$ffString .= "*";
-			}
 			
 			$ffString .= "|";
 
@@ -825,18 +808,4 @@
 		return $ffString;
 	}
 	
-	//This doenst work but it doesnt need to
-	function mergeData($masterObj, $newObj)
-	{
-		foreach($newObj as $newThread)
-		{
-			$id = $newThread->id;
-			
-			
-			
-			$masterObj[$id] = $newObj[$id];
-			
-		}
-		return $materObj;
-	}
  }
